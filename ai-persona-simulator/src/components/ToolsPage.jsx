@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { analyzeContentWithGemini } from '../services/geminiService'
 
 const ToolsPage = () => {
@@ -39,10 +39,115 @@ const ToolsPage = () => {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState(null);
   const [contentInput, setContentInput] = useState('');
+  const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  // File handling functions
+  const handleFileUpload = (files) => {
+    const validFiles = Array.from(files).filter(file => {
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
+      
+      if (!isImage && !isVideo) {
+        setError('Please upload only image or video files');
+        return false;
+      }
+      
+      if (!isValidSize) {
+        setError('File size must be less than 10MB');
+        return false;
+      }
+      
+      return true;
+    });
+
+    if (validFiles.length > 0) {
+      const newFiles = validFiles.map(file => ({
+        id: Date.now() + Math.random(),
+        file,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+      }));
+      
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+      setError(null);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = e.dataTransfer.files;
+    handleFileUpload(files);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleFileInput = (e) => {
+    const files = e.target.files;
+    if (files) {
+      handleFileUpload(files);
+    }
+  };
+
+  const removeFile = (fileId) => {
+    setUploadedFiles(prev => {
+      const updated = prev.filter(file => file.id !== fileId);
+      // Clean up object URLs to prevent memory leaks
+      const fileToRemove = prev.find(file => file.id === fileId);
+      if (fileToRemove && fileToRemove.preview) {
+        URL.revokeObjectURL(fileToRemove.preview);
+      }
+      return updated;
+    });
+  };
+
+  // Convert files to base64 for API
+  const convertFilesToBase64 = async (files) => {
+    const promises = files.map(fileObj => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result.split(',')[1]; // Remove data URL prefix
+          resolve({
+            type: fileObj.type,
+            base64: base64,
+            name: fileObj.name
+          });
+        };
+        reader.readAsDataURL(fileObj.file);
+      });
+    });
+    
+    return Promise.all(promises);
+  };
+
+  // Cleanup effect to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Clean up any object URLs when component unmounts
+      uploadedFiles.forEach(fileObj => {
+        if (fileObj.preview) {
+          URL.revokeObjectURL(fileObj.preview);
+        }
+      });
+    };
+  }, [uploadedFiles]);
 
   const handleAnalyze = async () => {
-    if (!contentInput.trim()) {
-      setError('Please enter some content to analyze');
+    if (!contentInput.trim() && uploadedFiles.length === 0) {
+      setError('Please enter some content or upload media files to analyze');
       return;
     }
 
@@ -51,10 +156,14 @@ const ToolsPage = () => {
     setError(null);
     
     try {
+      // Convert uploaded files to base64 for API
+      const mediaFiles = uploadedFiles.length > 0 ? await convertFilesToBase64(uploadedFiles) : [];
+      
       const result = await analyzeContentWithGemini(
         contentInput,
         'marketing_content',
-        selectedPersona
+        selectedPersona,
+        mediaFiles
       );
       setAnalysisResult(result);
       setShowAnalysis(true);
@@ -134,10 +243,70 @@ const ToolsPage = () => {
               </div>
               <div>
                 <label className="text-lg font-semibold text-white mb-2 block">3. Upload Media (Optional)</label>
-                <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center bg-gray-900/50">
-                  <p className="text-gray-400">Drag & drop images or videos, or click to browse</p>
-                  <p className="text-xs text-gray-500 mt-2">Feature coming soon</p>
+                <div 
+                  className={`border-2 border-dashed rounded-lg p-8 text-center bg-gray-900/50 transition-all duration-300 cursor-pointer ${
+                    isDragOver 
+                      ? 'border-purple-500 bg-purple-500/10' 
+                      : 'border-gray-600 hover:border-purple-400 hover:bg-gray-800/50'
+                  }`}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onClick={() => document.getElementById('file-input').click()}
+                >
+                  <div className="flex flex-col items-center space-y-2">
+                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <p className="text-gray-400">Drag & drop images or videos, or click to browse</p>
+                    <p className="text-xs text-gray-500">Supports JPG, PNG, GIF, MP4, MOV (max 10MB)</p>
+                  </div>
+                  <input
+                    id="file-input"
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={handleFileInput}
+                    className="hidden"
+                  />
                 </div>
+                
+                {/* Display uploaded files */}
+                {uploadedFiles.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm font-medium text-white">Uploaded Files:</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {uploadedFiles.map((fileObj) => (
+                        <div key={fileObj.id} className="flex items-center space-x-3 bg-gray-800/50 p-3 rounded-lg">
+                          {fileObj.preview ? (
+                            <img src={fileObj.preview} alt={fileObj.name} className="w-12 h-12 object-cover rounded" />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-700 rounded flex items-center justify-center">
+                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-white truncate">{fileObj.name}</p>
+                            <p className="text-xs text-gray-400">{(fileObj.size / 1024 / 1024).toFixed(1)} MB</p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(fileObj.id);
+                            }}
+                            className="text-red-400 hover:text-red-300 transition-colors"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </ToolCard>
@@ -257,6 +426,43 @@ const ToolsPage = () => {
                         <p key={type}><span className="capitalize">{type.replace('_', ' ')}:</span> {cost}</p>
                       ))}
                     </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Media Analysis Results */}
+          {uploadedFiles.length > 0 && analysisResult?.media_analysis && (
+            <div className="mt-6">
+              <h4 className="font-semibold text-white mb-2">Media Analysis:</h4>
+              <div className="bg-gray-900/50 p-4 rounded-lg">
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-400">Visual Appeal</p>
+                    <p className="text-2xl font-bold text-blue-400">{analysisResult.media_analysis.visual_appeal}/10</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-400">Brand Consistency</p>
+                    <p className="text-2xl font-bold text-green-400">{analysisResult.media_analysis.brand_consistency}/10</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-400">Accessibility</p>
+                    <p className="text-2xl font-bold text-yellow-400">{analysisResult.media_analysis.accessibility}/10</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-gray-400">Mobile Optimization</p>
+                    <p className="text-2xl font-bold text-purple-400">{analysisResult.media_analysis.mobile_optimization}/10</p>
+                  </div>
+                </div>
+                {analysisResult.media_analysis.improvement_suggestions && (
+                  <div>
+                    <p className="text-sm text-gray-400 mb-2">Media Improvement Suggestions:</p>
+                    <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                      {analysisResult.media_analysis.improvement_suggestions.map((suggestion, index) => (
+                        <li key={index}>{suggestion}</li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
