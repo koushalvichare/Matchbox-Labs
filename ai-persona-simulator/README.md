@@ -1,173 +1,130 @@
-# MatchBox Labs - AI Marketing Intelligence Platform
+# AI Persona Simulator - Secure Environment Setup
 
-A complete, stylish frontend for MatchBox Labs featuring advanced AI-powered marketing tools with a focus on Indian market insights.
+## 🔐 Secure API Key Management
 
-## 🚀 Features
+This project now uses **environment variables** to securely manage API keys instead of hard-coding them in the source code. This prevents accidental exposure of sensitive keys when committing to version control.
 
-### Current Tools
-- **AI Persona Simulator**: Test marketing content against diverse Indian customer personas
-- **Multi-modal Analysis**: Support for text, images, and videos
-- **Indian Market Insights**: Deep demographic data and regional recommendations
-- **Influencer Marketing**: AI-powered influencer suggestions and strategies
-- **Real-time Analytics**: Sentiment analysis, engagement metrics, and purchase intent scoring
+## 🚀 Quick Start
 
-### Coming Soon
-- **Content Analyzer**: Advanced content effectiveness analysis
-- **ROI Calculator**: AI-powered campaign ROI predictions
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-## 🏗️ Architecture
+### 2. Configure Environment Variables
+The `.env` file is already configured with your API keys:
 
-### Pages
-- **Home**: Landing page with hero section and feature overview
-- **About**: Company information and mission
-- **Contact**: Contact form and company details
-- **Get Started**: Pricing plans and onboarding
-- **Tools**:
-  - AI Persona Simulator (functional)
-  - Content Analyzer (coming soon)
-  - ROI Calculator (coming soon)
+```bash
+# Google AI (Gemini) Configuration
+VITE_GOOGLE_AI_API_KEY=your_google_ai_api_key_here
 
-### Components
-- **Navbar**: Professional navigation with company branding
-- **Footer**: Company links and social media
-- **PersonaSelector**: Choose from Indian customer personas
-- **ContentInput**: Multi-modal content input with drag-and-drop
-- **AIReactionPanel**: Advanced analytics and insights display
-- **ConnectionTest**: Gemini API connection verification
+# OpenAI Configuration (for future features)
+VITE_OPENAI_API_KEY=your_openai_api_key_here
+```
 
-## 🎨 Design System
+### 3. Start Development Server
+```bash
+npm run dev
+```
 
-### Colors
-- Primary: Blue (#3B82F6) to Purple (#8B5CF6) gradient
-- Secondary: Gray scale for text and backgrounds
-- Accent: Green for success states, Red for errors
+The application will be available at `http://localhost:5173/`
 
-### Typography
-- Headlines: Bold, large sizes for impact
-- Body: Clear, readable fonts
-- Interactive: Medium weight for buttons and links
+## 🏗️ Project Structure
 
-### Layout
-- Responsive grid system
-- Mobile-first design
-- Consistent spacing and padding
-- Modern card-based layouts
+```
+ai-persona-simulator/
+├── src/
+│   ├── components/           # React components
+│   │   ├── Header.jsx
+│   │   ├── Footer.jsx
+│   │   ├── HomePage.jsx
+│   │   ├── ToolsPage.jsx
+│   │   ├── AboutPage.jsx
+│   │   ├── ContactPage.jsx
+│   │   └── Icons.jsx
+│   ├── services/
+│   │   └── geminiService.js  # AI service integration
+│   ├── App.jsx               # Main app component
+│   ├── main.jsx              # Entry point
+│   └── index.css             # Global styles
+├── .env                      # Environment variables (secure)
+├── index.html                # HTML template
+├── package.json              # Dependencies and scripts
+├── vite.config.js            # Vite configuration
+├── tailwind.config.js        # Tailwind CSS config
+└── postcss.config.js         # PostCSS config
+```
 
-## 🔧 Setup & Installation
+## 🔧 Available Scripts
 
-1. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run clean` - Reinstall dependencies
 
-2. **Environment Setup**
-   Create a `.env` file with your API keys:
-   ```
-   VITE_GEMINI_API_KEY=your_gemini_api_key_here
-   VITE_OPENAI_API_KEY=your_openai_api_key_here
-   ```
+## 🌟 Key Features
 
-3. **Start Development Server**
-   ```bash
-   npm run dev
-   ```
+- ✅ **Secure API key management** via environment variables
+- ✅ **Modern React with Vite** for fast development
+- ✅ **Tailwind CSS** for responsive styling
+- ✅ **AI-powered content analysis** using Google Gemini
+- ✅ **Indian market insights** and persona simulation
+- ✅ **Component-based architecture** for maintainability
 
-4. **Build for Production**
-   ```bash
-   npm run build
-   ```
+## 🔒 Security Notes
 
-## 🧠 AI Integration
+1. **Never commit real API keys** to version control
+2. **Environment variables** are prefixed with `VITE_` to be accessible in the browser
+3. **`.env` file is in `.gitignore`** to prevent accidental commits
+4. **API keys are loaded securely** via `import.meta.env` in Vite
 
-### Google Gemini
-- **Model**: gemini-1.5-flash
-- **Capabilities**: Text, image, and video analysis
-- **Features**: Indian market insights, persona simulation, sentiment analysis
+## � Environment Variables
 
-### Content Analysis
-- Sentiment scoring (1-10)
-- Engagement prediction
-- Trust and credibility assessment
-- Purchase intent analysis
-- Regional appeal mapping
+The application uses Vite's environment variable system:
 
-## 📱 Responsive Design
+- Variables must be prefixed with `VITE_` to be accessible in the browser
+- Access them using `import.meta.env.VITE_VARIABLE_NAME`
+- Never expose server-side secrets in client-side code
 
-- **Mobile**: Optimized for smartphones
-- **Tablet**: Adapted layouts for medium screens
-- **Desktop**: Full-featured experience
-- **Navigation**: Collapsible mobile menu
+## 🐛 Troubleshooting
 
-## 🎯 Indian Market Focus
+### API Key Issues
+If you see "API key not found" errors:
+1. Check that your `.env` file exists and contains the correct keys
+2. Ensure keys are prefixed with `VITE_`
+3. Restart the development server after changing `.env`
 
-### Demographics Covered
-- Urban professionals
-- Rural consumers
-- Gen Z users
-- Entrepreneurs
-- Traditional families
-- Tech-savvy millennials
+### Build Issues
+```bash
+# Clear node_modules and reinstall
+rm -rf node_modules
+npm install
 
-### Regional Insights
-- North India preferences
-- South India trends
-- Western region analysis
-- Eastern market dynamics
+# Clear Vite cache
+npx vite --force
+```
 
-## 🔐 Security & Privacy
+## � Git Setup for GitHub
 
-- Secure API key management
-- Client-side processing where possible
-- No sensitive data storage
-- GDPR/privacy compliant forms
+To push this to GitHub without exposing API keys:
 
-## 📊 Analytics Features
+```bash
+# Remove any cached API keys from Git
+git rm --cached frontend/index.html
+git add .
+git commit -m "Secure API key management with environment variables"
+git push origin main
+```
 
-### Persona Analysis
-- Demographic matching
-- Behavioral predictions
-- Emotional response simulation
-- Cultural context awareness
+The `.gitignore` file already excludes `.env` files to keep your API keys safe.
 
-### Content Optimization
-- Tone adjustment suggestions
-- Regional customization
-- Language preference insights
-- Visual content recommendations
+## 🎯 Next Steps
 
-## 🚀 Future Roadmap
-
-### Q2 2024
-- Content Analyzer tool launch
-- Advanced reporting dashboard
-- API for third-party integrations
-
-### Q3 2024
-- ROI Calculator launch
-- Custom persona creation
-- White-label solutions
-
-### Q4 2024
-- Mobile app development
-- Advanced AI models
-- Enterprise features
-
-## 🛠️ Technology Stack
-
-- **Frontend**: React 19, Vite
-- **Styling**: Tailwind CSS
-- **Routing**: React Router DOM
-- **AI**: Google Gemini API
-- **Build**: Vite with modern ES modules
-- **Deploy**: Ready for Vercel/Netlify
-
-## 📞 Support
-
-For technical support or questions:
-- Email: support@matchboxlabs.ai
-- Documentation: Available in `/docs`
-- API Guide: `GEMINI_SETUP_GUIDE.md`
+1. **Test the application** - Try analyzing different marketing content
+2. **Customize personas** - Add more customer segments
+3. **Enhance features** - Add image/video analysis capabilities
+4. **Deploy** - Set up production environment variables
 
 ---
 
-**MatchBox Labs** - Revolutionizing marketing with AI-powered intelligence.
+**🔥 Built with Matchbox Labs** - Igniting your marketing potential with AI!
